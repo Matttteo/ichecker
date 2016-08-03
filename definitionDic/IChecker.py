@@ -1,7 +1,10 @@
+
 from spellcorrect import spellCorrector
+from context import fakeData
 from fakeData.spellRule import spellRule
 
 import copy
+import os
 
 class checker():
     '''
@@ -53,7 +56,7 @@ class checker():
                 self.addWord(word[:-1])
 
     def test(self):
-        self.readFile('test\definitions.txt')
+        self.readFile('D:\inconsistentCheck\definitonDic\definitions.txt')
         while True:
             word = raw_input("Enter a var name (q to quit) : \n")
             if len(word) == 0  or word == 'q':

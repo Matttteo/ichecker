@@ -1,0 +1,1 @@
+from .definitionDic import checker

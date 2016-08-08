@@ -56,7 +56,8 @@ class checker():
                 self.addWord(word[:-1])
 
     def test(self):
-        self.readFile('D:\inconsistentCheck\definitonDic\definitions.txt')
+        self.readFile(os.path.abspath(os.path.join(os.path.dirname(__file__) + '..\..')) + r'\test\data\definitions.txt')
+        #self.readFile(r'C:\Users\t-yubai\Desktop\definitions.txt')
         while True:
             word = raw_input("Enter a var name (q to quit) : \n")
             if len(word) == 0  or word == 'q':

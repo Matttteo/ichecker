@@ -133,6 +133,25 @@ class segmentWord():
 
     def isLowCase(self, Char):
         return  Char.islower()
+
+    def flattenWord(self, wordList):
+        res = []
+        if len(wordList) == 0:
+            return res
+        
+        for elem in wordList:
+            if type(elem) == list:
+                elem = self.flattenWord(elem)
+                res.extend(elem)
+            else:
+                res.append(elem)
+        return res
+
+    def splitWord(self, word):
+        res = [str.split('_') for str in word.split(' ')]
+        res = [str for str in res if str]
+        flattenRes = self.flattenWord(res)
+        return flattenRes
     def segWord(self, word):
         '''
         TODO:
@@ -172,6 +191,8 @@ class segmentWord():
         return wordSeg
 
     def test(self):
+        print self.splitWord('this is the_haha_ moment you_see  ')
+        print self.flattenWord([['waht','the'],[['hehe', 'haha'], ['xixi',['wawa','dodo']]]])
         print self.segWord("whatTheFuck")
 
 class combinationDifferentList():

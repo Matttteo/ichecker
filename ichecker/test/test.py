@@ -1,7 +1,7 @@
 
 
 def testAll():
-    from context import definitonDic as dic
+    from context import definitionDic as dic
     combine = dic.IChecker.combinationDifferentList()
     combine.test()
 

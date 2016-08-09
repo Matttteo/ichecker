@@ -13,7 +13,7 @@ updateHeader
 Flags
 AdminEmail
 PFXFileConent
-BlockSizeInBytes 
+BlockSizeInBytesï¿½
 ToolTip
 Hostname
 ClientID
@@ -25,4 +25,4 @@ Shutdown
 IpamwmiInvalidManagedObject
 IPv4Address
 DHCPSuperscopeV4
-
+DOMAIN_CONTROLLER_ID

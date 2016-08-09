@@ -12,7 +12,7 @@ class checker():
         self.nameReference = nameReference()
         self.segReference = segReference()
         self.segTool = segmentTool()
-        self.combineTool = combinationDifferentList()
+        self.combineTool = combineDifferentList()
 
     def addName(self, name):
         nameSeg = self.segTool.segName(name)
@@ -25,27 +25,67 @@ class checker():
         for i in range(1, segLen+1):
             for j in range(0, segLen - i + 1):
                 self.segReference.addSeg(''.join(nameSeg[j:j+i]))
-                self.segReference.addSeg(''.join(nameSeg[0:j]).join(nameSeg[j+i:]))
+                print ''.join(nameSeg[j:j+i])
+                self.segReference.addSeg(''.join(nameSeg[0:j]))
+                self.segReference.addSeg(''.join(nameSeg[j+i:]))
 
         for referencedSeg in self.segReference:
             self.spellCorrector.create_dictionary_entry(referencedSeg)
 
     def query(self, queryName):
         querySeg = self.segTool.segName(queryName)
-        queryResult = []
-
         segLen = len(querySeg)
+        connectedLists = [querySeg]
+        #building...
+        allResultList = []
+        for i in range(2, segLen+1):
+            for j in range(0, segLen - i + 1):
+                tmpList = querySeg[:j] + [(''.join(querySeg[j:j+i]))] + querySeg[j+i:]
+                print tmpList
+                connectedLists.append(tmpList)
+        print "this is connectedLists"
+        print connectedLists
+        for segList in connectedLists:
+            queryResult = []
+            Len = len(segList)
+            for i in range(Len):
+                print 'this is seg' ,segList[i]
+                suggestions = self.spellCorrector.get_suggestions(segList[i])
+                suggestions = set([self.segReference.findReferenceSeg(suggestion)
+                                   for suggestion in suggestions
+                                   if self.segReference.findReferenceSeg(suggestion) != ''])
+                #print suggestions
+                queryResult.append(list(suggestions))
+            possibleName = self.combineTool.combine(queryResult)
+            resultList = [self.nameReference.findReferenceName(''.join(name)) for name in possibleName
+                           if self.nameReference.findReferenceName(''.join(name)) != '']
+            allResultList.append(resultList)
+        
+        unorderedResultSet = set([])
+        orderedResultList = []
+        for resultList in allResultList:
+            for result in resultList:
+                if not unorderedResultSet.issuperset([result]):
+                    orderedResultList.append(result)
+                    unorderedResultSet.add(result)
+        return orderedResultList
+                    
+        ###
+        # print querySeg
+        # queryResult = []
 
-        for i in range(segLen):
-            suggestions = self.spellCorrector.get_suggestions(querySeg[i])
-            suggestions = set([self.segReference.findReferenceSeg(suggestion)
-                               for suggestion in suggestions
-                               if self.segReference.findReferenceSeg(suggestion) != ''])
-            queryResult.append(list(suggestions))
+        # segLen = len(querySeg)
 
-        possibleName = self.combineTool.combine(queryResult)
-        return [self.nameReference.findReferenceName(''.join(name)) for name in possibleName
-                if self.nameReference.findReferenceName(''.join(name)) != '']
+        # for i in range(segLen):
+        #     suggestions = self.spellCorrector.get_suggestions(querySeg[i])
+        #     suggestions = set([self.segReference.findReferenceSeg(suggestion)
+        #                        for suggestion in suggestions
+        #                        if self.segReference.findReferenceSeg(suggestion) != ''])
+        #     queryResult.append(list(suggestions))
+
+        # possibleName = self.combineTool.combine(queryResult)
+        # return [self.nameReference.findReferenceName(''.join(name)) for name in possibleName
+        #         if self.nameReference.findReferenceName(''.join(name)) != '']
 
     def readFile(self, fileName):
         with open(fileName, 'rt') as f:
@@ -159,7 +199,7 @@ class segmentTool():
         '''
         res = [str.split('_') for str in name.split(' ')]
         res = [str for str in res if str]
-        flattenRes = self.flattenList(res)
+        flattenRes = [res for res in self.flattenList(res)]
         return flattenRes
 
     def case(self, Char):
@@ -203,6 +243,7 @@ class segmentTool():
         for w in wordList:
             wordSeg = self.segWord(w)
             nameSeg.extend(wordSeg)
+        nameSeg = [seg.lower() for seg in nameSeg]
         return nameSeg
 
 
@@ -211,7 +252,7 @@ class segmentTool():
             name = raw_input('enter a name')
             print self.segName(name)
 
-class combinationDifferentList():
+class combineDifferentList():
 
     def combine(self, allList):
         listSize = len(allList)

@@ -7,34 +7,31 @@ import copy
 import os
 
 class checker():
-    '''
-    This class is
-    '''
     def __init__(self):
         self.spellCorrector = spellCorrector()
-        self.wordReference = wordReference()
+        self.nameReference = nameReference()
         self.segReference = segReference()
-        self.segTool = segmentWord()
+        self.segTool = segmentTool()
         self.combineTool = combinationDifferentList()
 
-    def addWord(self, word):
-        wordSeg = self.segTool.segWord(word)
-        self.wordReference.addWord(wordSeg, word)
+    def addName(self, name):
+        nameSeg = self.segTool.segName(name)
+        self.nameReference.addName(nameSeg, name)
 
-        for seg in wordSeg:
+        for seg in nameSeg:
             self.segReference.addSeg(seg)
 
-        segLen = len(wordSeg)
+        segLen = len(nameSeg)
         for i in range(1, segLen+1):
             for j in range(0, segLen - i + 1):
-                self.segReference.addSeg(''.join(wordSeg[j:j+i]))
-                self.segReference.addSeg(''.join(wordSeg[0:j]).join(wordSeg[j+i:]))
+                self.segReference.addSeg(''.join(nameSeg[j:j+i]))
+                self.segReference.addSeg(''.join(nameSeg[0:j]).join(nameSeg[j+i:]))
 
         for referencedSeg in self.segReference:
             self.spellCorrector.create_dictionary_entry(referencedSeg)
 
-    def query(self, queryWord):
-        querySeg = self.segTool.segWord(queryWord)
+    def query(self, queryName):
+        querySeg = self.segTool.segName(queryName)
         queryResult = []
 
         segLen = len(querySeg)
@@ -46,53 +43,53 @@ class checker():
                                if self.segReference.findReferenceSeg(suggestion) != ''])
             queryResult.append(list(suggestions))
 
-        possibleWord = self.combineTool.combine(queryResult)
-        return [self.wordReference.findReferenceWord(''.join(word)) for word in possibleWord
-                if self.wordReference.findReferenceWord(''.join(word)) != '']
+        possibleName = self.combineTool.combine(queryResult)
+        return [self.nameReference.findReferenceName(''.join(name)) for name in possibleName
+                if self.nameReference.findReferenceName(''.join(name)) != '']
 
     def readFile(self, fileName):
         with open(fileName, 'rt') as f:
-            for word in f:
-                self.addWord(word[:-1])
+            for line in f:
+                self.addName(line[:-1])
 
     def test(self):
         self.readFile(os.path.abspath(os.path.join(os.path.dirname(__file__) + '..\..')) + r'\test\data\definitions.txt')
         #self.readFile(r'C:\Users\t-yubai\Desktop\definitions.txt')
         while True:
-            word = raw_input("Enter a var name (q to quit) : \n")
-            if len(word) == 0  or word == 'q':
+            name = raw_input("Enter a var name (q to quit) : \n")
+            if len(name) == 0  or name == 'q':
                 break
-            varItems = self.query(word)
+            varItems = self.query(name)
             print varItems
 
 
-class wordReference():
+class nameReference():
     def __init__(self):
         self.referenceTable = {}
 
-    def addWord(self, wordSeg, word):
-        self.referenceTable[''.join(wordSeg)] = word
-        splits = [(wordSeg[0:i], wordSeg[i:]) for i in range(len(wordSeg) + 1)]
+    def addName(self, nameSeg, name):
+        self.referenceTable[''.join(nameSeg)] = name
+        splits = [(nameSeg[0:i], nameSeg[i:]) for i in range(len(nameSeg) + 1)]
         deletes = [a + b[1:] for a, b in splits if b]
         for d in deletes:
-            self.referenceTable[''.join(d)] = word
+            self.referenceTable[''.join(d)] = name
 
-    def findReferenceWord(self, queryWord):
-        if queryWord in self.referenceTable:
-            return self.referenceTable[queryWord]
+    def findReferenceName(self, queryName):
+        if queryName in self.referenceTable:
+            return self.referenceTable[queryName]
         else:
             return ''
 
-    def findAllReferenced(self, word):
+    def findAllReferenced(self, name):
         result = []
         for item in self.referenceTable:
-            if self.referenceTable[item] == word:
+            if self.referenceTable[item] == name:
                 result.append(item)
         return result
 
     def test(self):
-        wordSeg = ['what', 'the', 'fuck']
-        self.addWord(wordSeg, 'WhatTheFuck')
+        nameSeg = ['what', 'the', 'fuck']
+        self.addName(nameSeg, 'WhatTheFuck')
         print [item for item in self.findAllReferenced('WhatTheFuck')]
 
 class segReference():
@@ -128,73 +125,91 @@ class segReference():
         print [referenced for referenced in self.findAllReferenced('token')]
         print [referenced for referenced in self.findAllReferenced('capacity')]
 
-class segmentWord():
+
+class segmentTool():
     def __init__(self):
         pass
 
     def isLowCase(self, Char):
         return  Char.islower()
 
-    def flattenWord(self, wordList):
+    def flattenList(self, wordList):
+        ''' Given a list which may contain other list, return a flatten list contains all the elements
+
+        For example:
+        flattenWord([1,[2,3],[[4],[5],[6,7]]]) == [1,2,3,4,5,6,7]
+        '''
         res = []
         if len(wordList) == 0:
             return res
-        
         for elem in wordList:
             if type(elem) == list:
-                elem = self.flattenWord(elem)
+                elem = self.flattenList(elem)
                 res.extend(elem)
             else:
                 res.append(elem)
         return res
 
-    def splitWord(self, word):
-        res = [str.split('_') for str in word.split(' ')]
+    def splitName(self, name):
+        '''Given a name which may contain ' ' or '_', split it by these symbol and return a list
+
+        For example:
+        splitName('This is a_good_example  ') = ['This', 'is', 'a', 'good', 'example']
+
+        '''
+        res = [str.split('_') for str in name.split(' ')]
         res = [str for str in res if str]
-        flattenRes = self.flattenWord(res)
+        flattenRes = self.flattenList(res)
         return flattenRes
+
+    def case(self, Char):
+        if Char.isupper():
+            return 1
+        else:
+            return 2
+
     def segWord(self, word):
-        '''
-        TODO:
-        The function now is very fragile, need more works
-        :param word:
-        :return:
-        '''
-        wordLen = len(word)
         wordSeg = []
-        lo = 0
+        wordLen = len(word)
+
+        if wordLen == 0:
+            return wordSeg
+        
         i = 0
+        tmp = ''
         while i < wordLen:
-            if self.isLowCase(word[i]) is False:
-                if i + 1 < wordLen and self.isLowCase(word[i + 1]) is False:
-                    if i != 0:
-                        seg = word[lo:i]
-                        wordSeg.append(seg.lower())
-                    abbreviation = ""
-                    while i < wordLen and self.isLowCase(word[i]) is False:
-                        abbreviation += word[i]
-                        i += 1
-                    wordSeg.append(abbreviation.lower())
-                    lo = i
-                    continue
+            tmp += word[i]
+            if i == wordLen - 1 or self.case(word[i]) != self.case(word[i+1]):
+                if i == wordLen - 1:
+                    wordSeg.append(tmp)
+                    return wordSeg
+                if word[i].isupper():
+                    if len(tmp) > 1:
+                        wordSeg.append(tmp[:-1])                    
+                    tmp = word[i]
+                    i += 1
                 else:
-                    if (i == 0):
-                        i += 1
-                        continue
-                    seg = word[lo:i]
-                    wordSeg.append(seg.lower())
-                    lo = i
+                    wordSeg.append(tmp)
+                    tmp = ''
                     i += 1
             else:
                 i += 1
-        if lo < wordLen:
-            wordSeg.append(word[lo:].lower())
         return wordSeg
 
+
+    def segName(self, name):
+        wordList = self.splitName(name)
+        nameSeg = []
+        for w in wordList:
+            wordSeg = self.segWord(w)
+            nameSeg.extend(wordSeg)
+        return nameSeg
+
+
     def test(self):
-        print self.splitWord('this is the_haha_ moment you_see  ')
-        print self.flattenWord([['waht','the'],[['hehe', 'haha'], ['xixi',['wawa','dodo']]]])
-        print self.segWord("whatTheFuck")
+        while True:
+            name = raw_input('enter a name')
+            print self.segName(name)
 
 class combinationDifferentList():
 

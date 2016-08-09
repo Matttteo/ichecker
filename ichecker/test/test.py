@@ -5,13 +5,13 @@ def testAll():
     combine = dic.IChecker.combinationDifferentList()
     combine.test()
 
-    segTool = dic.IChecker.segmentWord()
-    segTool.test()
+    segTool = dic.IChecker.segmentTool()
+    #segTool.test()
 
     segRef = dic.IChecker.segReference()
     segRef.test()
 
-    wordRef = dic.IChecker.wordReference()
+    wordRef = dic.IChecker.nameReference()
     wordRef.test()
 
     checker = dic.checker()

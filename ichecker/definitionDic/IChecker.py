@@ -25,7 +25,6 @@ class checker():
         for i in range(1, segLen+1):
             for j in range(0, segLen - i + 1):
                 self.segReference.addSeg(''.join(nameSeg[j:j+i]))
-                print ''.join(nameSeg[j:j+i])
                 self.segReference.addSeg(''.join(nameSeg[0:j]))
                 self.segReference.addSeg(''.join(nameSeg[j+i:]))
 
@@ -41,15 +40,11 @@ class checker():
         for i in range(2, segLen+1):
             for j in range(0, segLen - i + 1):
                 tmpList = querySeg[:j] + [(''.join(querySeg[j:j+i]))] + querySeg[j+i:]
-                print tmpList
                 connectedLists.append(tmpList)
-        print "this is connectedLists"
-        print connectedLists
         for segList in connectedLists:
             queryResult = []
             Len = len(segList)
             for i in range(Len):
-                print 'this is seg' ,segList[i]
                 suggestions = self.spellCorrector.get_suggestions(segList[i])
                 suggestions = set([self.segReference.findReferenceSeg(suggestion)
                                    for suggestion in suggestions

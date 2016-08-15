@@ -1,5 +1,5 @@
 
-from spellcorrect import spellCorrector
+from spellcorrect2 import spellCorrector
 from context import fakeData
 from fakeData.spellRule import spellRule
 
@@ -13,8 +13,10 @@ class checker():
         self.segReference = segReference()
         self.segTool = segmentTool()
         self.combineTool = combineDifferentList()
+        self.rawNames = set()
 
     def addName(self, name):
+        self.rawNames.add(name)
         nameSeg = self.segTool.segName(name)
         self.nameReference.addName(nameSeg, name)
 
@@ -25,14 +27,44 @@ class checker():
         for i in range(1, segLen+1):
             for j in range(0, segLen - i + 1):
                 self.segReference.addSeg(''.join(nameSeg[j:j+i]))
-                self.segReference.addSeg(''.join(nameSeg[0:j]))
-                self.segReference.addSeg(''.join(nameSeg[j+i:]))
+                self.spellCorrector.create_dictionary_entry(''.join(nameSeg[j:j+i]))
+                #print ''.join(nameSeg[j:j+i])
+                self.segReference.addSeg(''.join(nameSeg[0:j]) + ''.join(nameSeg[j+i:]))
+                self.spellCorrector.create_dictionary_entry(''.join(nameSeg[0:j]) + ''.join(nameSeg[j+i:]))
+                #print ''.join(nameSeg[0:j]) + ''.join(nameSeg[j+i:])
+                #self.segReference.addSeg(''.join(nameSeg[0:j]))
+                #self.spellCorrector.create_dictionary_entry(''.join(nameSeg[0:j]))
+                #self.segReference.addSeg(''.join(nameSeg[j+i:]))
+                #self.spellCorrector.create_dictionary_entry(''.join(nameSeg[j+i:]))
+        #for referencedSeg in self.segReference:
+        #    self.spellCorrector.create_dictionary_entry(referencedSeg)
 
-        for referencedSeg in self.segReference:
-            self.spellCorrector.create_dictionary_entry(referencedSeg)
+
+    def helper(self, segList,allResultList):
+        queryResult = []
+        Len = len(segList)
+        for i in range(Len):
+            #print segList[i]
+            suggestions = self.spellCorrector.get_suggestions(segList[i])
+            if len(suggestions) == 0:
+                return
+                    
+            suggestions = [list(self.segReference.findReferenceSeg(suggestion))
+                                for suggestion in suggestions
+                                if self.segReference.findReferenceSeg(suggestion) != '']
+            suggestions = set(self.segTool.flattenList(suggestions))
+            #print suggestions
+            queryResult.append(list(suggestions))
+        possibleName = self.combineTool.combine(queryResult)
+        #print possibleName
+        resultList = [list(self.nameReference.findReferenceName(''.join(name))) for name in possibleName
+                        if self.nameReference.findReferenceName(''.join(name)) != '']
+        resultList = self.segTool.flattenList(resultList)
+        allResultList.append(resultList)
 
     def query(self, queryName):
         querySeg = self.segTool.segName(queryName)
+        #print querySeg
         segLen = len(querySeg)
         connectedLists = [querySeg]
         #building...
@@ -42,19 +74,8 @@ class checker():
                 tmpList = querySeg[:j] + [(''.join(querySeg[j:j+i]))] + querySeg[j+i:]
                 connectedLists.append(tmpList)
         for segList in connectedLists:
-            queryResult = []
-            Len = len(segList)
-            for i in range(Len):
-                suggestions = self.spellCorrector.get_suggestions(segList[i])
-                suggestions = set([self.segReference.findReferenceSeg(suggestion)
-                                   for suggestion in suggestions
-                                   if self.segReference.findReferenceSeg(suggestion) != ''])
-                #print suggestions
-                queryResult.append(list(suggestions))
-            possibleName = self.combineTool.combine(queryResult)
-            resultList = [self.nameReference.findReferenceName(''.join(name)) for name in possibleName
-                           if self.nameReference.findReferenceName(''.join(name)) != '']
-            allResultList.append(resultList)
+            #print segList
+            self.helper(segList, allResultList)
         
         unorderedResultSet = set([])
         orderedResultList = []
@@ -63,6 +84,18 @@ class checker():
                 if not unorderedResultSet.issuperset([result]):
                     orderedResultList.append(result)
                     unorderedResultSet.add(result)
+
+        if len(orderedResultList) == 0:
+            res = []
+            minDistance = 100
+            for rawname in self.rawNames:
+                distance = self.spellCorrector.dameraulevenshtein(queryName, rawname) 
+                if distance < minDistance:
+                    minDistance = distance
+                    res = [rawname]
+                elif distance == minDistance:
+                    res.append(rawname)
+            return res
         return orderedResultList
                     
         ###
@@ -85,6 +118,7 @@ class checker():
     def readFile(self, fileName):
         with open(fileName, 'rt') as f:
             for line in f:
+                self.rawNames.add(line[:-1])
                 self.addName(line[:-1])
 
     def test(self):
@@ -103,22 +137,31 @@ class nameReference():
         self.referenceTable = {}
 
     def addName(self, nameSeg, name):
-        self.referenceTable[''.join(nameSeg)] = name
+        #test
+        if ''.join(nameSeg) not in self.referenceTable:
+            self.referenceTable[''.join(nameSeg)] = set([name])
+        else:
+            self.referenceTable[''.join(nameSeg)].add(name)
         splits = [(nameSeg[0:i], nameSeg[i:]) for i in range(len(nameSeg) + 1)]
         deletes = [a + b[1:] for a, b in splits if b]
         for d in deletes:
-            self.referenceTable[''.join(d)] = name
+            if ''.join(d):
+                #print ''.join(d)
+                if ''.join(d) not in self.referenceTable:
+                    self.referenceTable[''.join(d)] = set([name])
+                else:
+                    self.referenceTable[''.join(d)].add(name)
 
     def findReferenceName(self, queryName):
         if queryName in self.referenceTable:
             return self.referenceTable[queryName]
         else:
-            return ''
+            return set()
 
     def findAllReferenced(self, name):
         result = []
         for item in self.referenceTable:
-            if self.referenceTable[item] == name:
+            if name in self.referenceTable[item]:
                 result.append(item)
         return result
 
@@ -136,10 +179,16 @@ class segReference():
         return iter(self.referenceTable)
 
     def addSeg(self, seg):
-        self.referenceTable[seg] = seg
+        if seg  not in  self.referenceTable:
+            self.referenceTable[seg] = set([seg])
+        else:
+            self.referenceTable[seg].add(seg)
         for wrongSpellSeg in self.wrongSpellRule.genIssueWord(seg):
             if wrongSpellSeg not in self.referenceTable:
-                self.referenceTable[wrongSpellSeg] = seg
+                if wrongSpellSeg not in self.referenceTable:
+                    self.referenceTable[wrongSpellSeg] = set([seg])
+                else:
+                     self.referenceTable[wrongSpellSeg].add(seg)
 
     def findReferenceSeg(self, querySeg):
         if querySeg in self.referenceTable:
@@ -150,7 +199,7 @@ class segReference():
     def findAllReferenced(self, seg):
         result = []
         for item in self.referenceTable:
-            if self.referenceTable[item] == seg:
+            if seg in self.referenceTable[item]:
                 result.append(item)
         return result
 

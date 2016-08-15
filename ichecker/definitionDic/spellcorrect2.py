@@ -15,9 +15,18 @@ class spellCorrector():
     def get_deletes_list(self, w):
         '''given a word, derive strings with up to max_edit_distance characters
            deleted'''
+        wLen = len(w)
+        max_edit_dist = 0
+        if wLen <=2:
+            max_edit_dist = 0
+        elif wLen <=4:
+            max_edit_dist = 1
+        else:
+            max_edit_dist = 2
+
         deletes = []
         queue = [w]
-        for d in range(self.max_edit_distance):
+        for d in range(max_edit_dist):
             temp_queue = []
             for word in queue:
                 if len(word) > 1:
@@ -113,7 +122,15 @@ class spellCorrector():
     def get_suggestions(self, string, silent=False):
         """return list of suggested corrections for potentially incorrectly
            spelled word"""
-        if (len(string) - self.longest_word_length) > self.max_edit_distance:
+        wLen = len(string)
+        max_edit_dist = 0
+        if wLen <=2:
+            max_edit_dist = 0
+        elif wLen <=4:
+            max_edit_dist = 1
+        else:
+            max_edit_dist = 2
+        if (len(string) - self.longest_word_length) > max_edit_dist:
             if not silent:
                 print "no items in dictionary within maximum edit distance"
             return []
@@ -184,7 +201,7 @@ class spellCorrector():
                         # verbose setting not on
                         if ((self.verbose < 2) and (item_dist > min_suggest_len)):
                             pass
-                        elif item_dist <= self.max_edit_distance:
+                        elif item_dist <= max_edit_dist:
                             assert sc_item in self.dictionary  # should already be in dictionary if in suggestion list
                             suggest_dict[sc_item] = (self.dictionary[sc_item][1], item_dist)
                             if item_dist < min_suggest_len:
@@ -206,7 +223,7 @@ class spellCorrector():
             # is not on
             if ((self.verbose < 2) and ((len(string) - len(q_item)) > min_suggest_len)):
                 pass
-            elif (len(string) - len(q_item)) < self.max_edit_distance and len(q_item) > 1:
+            elif (len(string) - len(q_item)) < max_edit_dist and len(q_item) > 1:
                 for c in range(len(q_item)):  # character index
                     word_minus_c = q_item[:c] + q_item[c + 1:]
                     if word_minus_c not in q_dictionary:

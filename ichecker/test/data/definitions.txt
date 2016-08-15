@@ -15,6 +15,7 @@ AdminEmail
 PFXFileConent
 BlockSizeInBytes�
 ToolTip
+NameTip
 Hostname
 ClientID
 NetwordkId
@@ -26,3 +27,11 @@ IpamwmiInvalidManagedObject
 IPv4Address
 DHCPSuperscopeV4
 DOMAIN_CONTROLLER_ID
+EVENTID_RESUME_INPUT
+PDUTYPE_DEACTIVATEALLPDU
+tokenGroupsNoGCAcceptable
+SystemParameter
+"TF_PROFILETYPE_INPUTPROCESSOR
+AppId
+IpamApiUserDoesNotHavePermissionToEditIPAddress
+ThisIsATestForLongVariableNameFor
